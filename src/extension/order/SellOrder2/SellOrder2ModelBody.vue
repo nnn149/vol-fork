@@ -2,6 +2,7 @@
   <VolBox
     v-model="model"
     title="选择数据"
+    :lazy="true"
     :height="530"
     :width="1100"
     :padding="10"
@@ -111,7 +112,11 @@ export default {
         return this.$Message.error("请选择行数据");
       }
       //给当前行设置值
-      Object.assign(this.row, rows[0]);
+      this.row.ProductName = rows[0].ProductName;
+      this.row.MO = rows[0].MO;
+      this.row.Qty = rows[0].Qty;
+      this.row.Weight = rows[0].Weight;
+      this.row.Remark = rows[0].Remark;
       this.model = false;
     },
     loadTableBefore(params) {
