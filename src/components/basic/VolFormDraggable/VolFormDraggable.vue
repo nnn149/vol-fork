@@ -2,7 +2,6 @@
   <div class="drag-container">
     <!-- @start="onStart" -->
     <div class="drag-left">
-  
       <div class="left-title">组件列表</div>
       <draggable
         v-model="components"
@@ -23,12 +22,11 @@
             <i :class="item.icon"></i> {{ item.name }}
           </div>
         </transition-group>
-        
       </draggable>
-          <div class="example">
-        <div @click="example1">示例一<i class="el-icon-arrow-right" ></i></div>
-        <div @click="example2">示例二<i class="el-icon-arrow-right" ></i></div>
-        <div @click="example3">示例三<i class="el-icon-arrow-right" ></i></div>
+      <div class="example">
+        <div @click="example1">示例一<i class="el-icon-arrow-right"></i></div>
+        <div @click="example2">示例二<i class="el-icon-arrow-right"></i></div>
+        <div @click="example3">示例三<i class="el-icon-arrow-right"></i></div>
       </div>
     </div>
 
@@ -40,7 +38,7 @@
         <el-button type="primary" size="mini" plain @click="save"
           ><i class="el-icon-check"> </i>保存</el-button
         >
-        <el-button type="primary" size="mini" plain @click="priview"
+        <el-button type="primary" size="mini" plain @click="preview(true)"
           ><i class="el-icon-view"> </i>预览</el-button
         >
         <el-button type="primary" size="mini" plain @click="download"
@@ -439,7 +437,7 @@
   </vol-box>
 
   <vol-box
-    v-model="priviewModel"
+    v-model="previewModel"
     :height="600"
     :width="1300"
     :lazy="true"
@@ -525,6 +523,7 @@ import VolBox from "./../VolBox";
 import VolFormPreview from "./VolFormPreview";
 import { components, tableOption } from "./options";
 import { options1, options2, options3 } from "./formTemplate";
+import downloadForm from "./DownloadForm";
 export default {
   props: {
     userComponents: {
@@ -544,6 +543,7 @@ export default {
   },
   data() {
     return {
+      options:{},
       options1: options1,
       options2: options2,
       options3: options3,
@@ -558,7 +558,7 @@ export default {
       dicList: [],
       model: false,
       tableModel: false,
-      priviewModel: false,
+      previewModel: false,
       viewFormData: { fields: {}, formOptions: [], tables: [] },
     };
   },
@@ -568,10 +568,16 @@ export default {
         this.currentComponents[this.currentIndex].width = newVal;
       }
     },
+    userComponents: {
+      handler(newVal) {
+        this.currentComponents = newVal;
+      },
+      immediate: true,
+      deep: true,
+    },
   },
   created() {
-    //  this.currentComponents = this.userComponents;
-    this.currentComponents.push(...this.userComponents);
+    this.currentComponents = this.userComponents;
     this.http
       .post("api/Sys_Dictionary/GetBuilderDictionary", {}, false)
       .then((x) => {
@@ -661,7 +667,7 @@ export default {
       });
     },
     setSpan() {},
-    priview() {
+    preview(isPre) {
       let _fields = {};
       let _formOptions = [];
       let endIndex = -1;
@@ -712,7 +718,9 @@ export default {
       this.viewFormData.fields = _fields;
       // console.log(JSON.stringify(_formOptions))
       this.viewFormData.formOptions = _formOptions;
-      this.priviewModel = true;
+      if (isPre) {
+        this.previewModel = true;
+      }
       let tableIndex = 0;
       let keys = [];
       let tables = this.currentComponents
@@ -763,7 +771,7 @@ export default {
         return x.tabs;
       });
       this.getDicKeys(keys);
-      console.log(JSON.stringify(this.viewFormData));
+          this.options = this.viewFormData;
     },
     getDicKeys(keys) {
       if (!keys.length) {
@@ -793,10 +801,15 @@ export default {
         });
     },
     save() {
-      this.$emit("save", this.currentComponents);
+      this.preview(false);
+      this.$emit("save", {
+        daraggeOptions: this.currentComponents,
+        formOptions: this.viewFormData,
+      });
     },
     download() {
-      this.$Message.info("开发中")
+      this.preview(false);
+      downloadForm.call(this);
     },
     openTableModel() {
       let dataSource = this.currentTableOption.find((x) => {
