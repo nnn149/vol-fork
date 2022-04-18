@@ -304,7 +304,12 @@ export default defineComponent({
     });
     const initTree = () => {
       http.post("/api/menu/getMenu", {}, true).then((x) => {
-        x.forEach(item=>{item.icon='el-icon-menu'})
+        x.forEach(item=>{
+          item.icon='el-icon-menu';
+          if (item.menuType==1&&!item.parentId) {
+            item.name="(app)"+item.name;
+          }
+        })
         tree.value = x;
       });
     };
@@ -325,6 +330,7 @@ export default defineComponent({
       icon: "",
       orderNo: "",
       enable: 1,
+      menuType:null,
       createDate: "",
       creator: "",
       modifyDate: "",
@@ -408,6 +414,18 @@ export default defineComponent({
             { key: 1, value: "启用" },
             { key: 2, value: "启用不显示" },
             { key: 0, value: "禁用" },
+          ],
+        },  
+        {
+          // 2022.03.26增移动端加菜单类型
+          title: "菜单类型",
+          field: "menuType",
+          required: true,
+          type: "select",
+          colSize: 4,
+          data: [
+            { key: 0, value: "PC菜单" },
+            { key: 1, value: "移动端菜单" }
           ],
         },
         {
