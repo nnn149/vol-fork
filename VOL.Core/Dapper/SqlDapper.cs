@@ -1,4 +1,4 @@
-
+﻿
 using Dapper;
 using MySqlConnector;
 using System;
@@ -14,8 +14,6 @@ using VOL.Core.Const;
 using VOL.Core.DBManager;
 using VOL.Core.Enums;
 using VOL.Core.Extensions;
-using VOL.Core.Utilities;
-
 
 namespace VOL.Core.Dapper
 {
@@ -55,7 +53,7 @@ namespace VOL.Core.Dapper
 
         private T Execute<T>(Func<IDbConnection, IDbTransaction, T> func, bool beginTransaction = false)
         {
-            if (_transaction)
+            if (_transaction|| dbTransaction!=null)
             {
                 return func(_transactionConnection, dbTransaction);
             }
@@ -84,7 +82,7 @@ namespace VOL.Core.Dapper
                 catch (Exception ex)
                 {
                     dbTransaction?.Rollback();
-                    throw ex;
+                    throw new Exception(ex.Message,ex);
                 }
                 finally
                 {
@@ -95,7 +93,7 @@ namespace VOL.Core.Dapper
 
         private async Task<T> ExecuteAsync<T>(Func<IDbConnection, IDbTransaction, Task<T>> funcAsync, bool beginTransaction = false)
         {
-            if (_transaction)
+            if (_transaction|| dbTransaction!=null)
             {
                 return await funcAsync(_transactionConnection, dbTransaction);
             }
@@ -132,7 +130,7 @@ namespace VOL.Core.Dapper
                 catch (Exception ex)
                 {
                     dbTransaction?.Rollback();
-                    throw ex;
+                    throw new Exception(ex.Message,ex);
                 }
             }
         }
@@ -782,7 +780,7 @@ namespace VOL.Core.Dapper
             }
             catch (Exception ex)
             {
-                throw ex;
+                throw new Exception(ex.Message,ex);
             }
             return insertCount;
             //   File.Delete(path);
@@ -921,7 +919,7 @@ namespace VOL.Core.Dapper
             catch (Exception ex)
             {
 
-                throw ex;
+                throw new Exception(ex.Message, ex);
             }
             finally
             {
@@ -942,10 +940,10 @@ namespace VOL.Core.Dapper
             }
             catch (Exception ex)
             {
-
-                throw ex;
+                throw new Exception(ex.Message,ex);
             }
-            finally {
+            finally
+            {
                 _transactionConnection?.Dispose();
                 dbTransaction?.Dispose();
             }
