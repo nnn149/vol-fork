@@ -151,7 +151,12 @@
                   style="width: 100%"
                   v-if="['date', 'datetime'].indexOf(column.edit.type) != -1"
                   v-model="scope.row[column.field]"
-                  @change="(val)=>{column.onChange && column.onChange(scope.row, column,val)}"
+                  @change="
+                    (val) => {
+                      column.onChange &&
+                        column.onChange(scope.row, column, val);
+                    }
+                  "
                   :type="column.edit.type"
                   :placeholder="column.placeholder || column.title"
                   :disabledDate="(val) => getDateOptions(val, column)"
@@ -165,7 +170,12 @@
                   style="width: 100%"
                   v-else-if="column.edit.type == 'time'"
                   v-model="scope.row[column.field]"
-                  @change="(val)=>{column.onChange && column.onChange(scope.row, column,val)}"
+                  @change="
+                    (val) => {
+                      column.onChange &&
+                        column.onChange(scope.row, column, val);
+                    }
+                  "
                   :placeholder="column.placeholder || column.title"
                   :value-format="column.format || 'HH:mm:ss'"
                   :disabled="initColumnDisabled(scope.row, column)"
@@ -353,7 +363,7 @@
             <div
               @click="
                 () => {
-                  olumn.click && formatterClick(scope.row, column);
+                  column.click && formatterClick(scope.row, column);
                 }
               "
               v-else-if="column.bind"
@@ -1320,20 +1330,31 @@ export default defineComponent({
       }
 
       this.columns.forEach((col) => {
-        if (!col.hidden) {
-          if (data.summary.hasOwnProperty(col.field)) {
-            let sum = data.summary[col.field];
-            if (sum) {
-              sum = (sum * 1.0).toFixed(2).replace('.00', '') * 1.0;
-            }
-            this.summaryData.push(sum);
-          } else {
-            this.summaryData.push('');
-          }
+        if (col.children && col.children.length) {
+          col.children.forEach((item) => {
+            this.getColumnSummaries(item, data);
+          });
+        } else {
+          this.getColumnSummaries(col, data);
         }
       });
       if (this.summaryData.length > 0 && this.summaryData[0] == '') {
         this.summaryData[0] = '合计';
+      }
+    },
+    getColumnSummaries(col, data) {
+      if (!col.hidden) {
+        if (data.summary.hasOwnProperty(col.field)) {
+          let sum = data.summary[col.field];
+          if (sum) {
+            sum =
+              (sum * 1.0).toFixed(col.numberLength || 2).replace('.00', '') *
+              1.0;
+          }
+          this.summaryData.push(sum);
+        } else {
+          this.summaryData.push('');
+        }
       }
     },
     getInputChangeSummaries() {},
@@ -1417,7 +1438,7 @@ export default defineComponent({
         return row[column.field];
       }
 
-      if (column.edit && column.edit.type == 'selectList') {
+      if (column.edit && (column.edit.type == 'selectList'||column.edit.type=='treeSelect')) {
         if (!Array.isArray(val)) {
           row[column.field] = val.split(',');
         } else {
@@ -1426,10 +1447,10 @@ export default defineComponent({
         return this.getSelectFormatter(column, val);
       }
       // 编辑多选table显示
-      if (column.bind.type == 'selectList' || column.bind.type == 'checkbox') {
-        if (typeof val === 'string' && val.indexOf(',') != -1) {
-          return this.getSelectFormatter(column, val);
-        }
+      if (column.bind.type == 'selectList' || column.bind.type == 'checkbox'||column.bind.type=='treeSelect') {
+       // if (typeof val === 'string' && val.indexOf(',') != -1) {
+          return this.getSelectFormatter(column, val+'');
+      //  }
       }
       let source = column.bind.data.filter((x) => {
         // return x.key != "" && x.key == val;
@@ -1441,20 +1462,16 @@ export default defineComponent({
     },
     getSelectFormatter(column, val) {
       // 编辑多选table显示
-      let valArr = val.split(',');
+      let valArr = val.split(",");
       for (let index = 0; index < valArr.length; index++) {
-        column.bind.data.forEach((x) => {
+        (column.bind.orginData||column.bind.data).forEach((x) => {
           // 2020.06.06修复数据源为selectList时,key为数字0时不能转换文本的问题
-          if (
-            x.key !== '' &&
-            x.key !== undefined &&
-            x.key + '' == valArr[index] + ''
-          ) {
+          if (x.key !== "" && x.key !== undefined && x.key + "" == valArr[index] + "") {
             valArr[index] = x.label || x.value;
           }
         });
       }
-      return valArr.join(',');
+      return valArr.join(",");
     },
     onChange(scope, val, event, column) {
       // 2020.09.03修复onChange不触发的问题
@@ -1470,15 +1487,20 @@ export default defineComponent({
       // column列设置了summary属性的才计算值
       if (!column.summary) return;
       let sum = 0;
-      let _index = 0;
+      //  let _index = 0;
       (this.url ? this.rowData : this.tableData).forEach((x, index) => {
         if (x.hasOwnProperty(column.field) && !isNaN(x[column.field])) {
-          _index = index;
+          // _index = index;
           sum += x[column.field] * 1;
         }
       });
       if (sum) {
-        sum = (sum * 1.0).toFixed(2).replace('.00', '') * 1.0;
+        if (column.summary == 'avg') {
+          sum = sum / (this.rowData.length || this.tableData.length || 1);
+        }
+        sum =
+          (sum * 1.0).toFixed(column.numberLength || 2).replace('.00', '') *
+          1.0;
       }
       this.summaryData[this.summaryIndex[column.field]] = sum;
     },

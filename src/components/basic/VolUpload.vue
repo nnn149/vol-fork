@@ -459,8 +459,21 @@ export default {
       if (!this.files || this.files.length == 0) {
         return this.$message.error('请选择文件');
       }
-      if (!this.uploadBefore(this.files)) {
+      //增加上传时自定义参数，后台使用获取Utilities.HttpContext.Current.Request.Query["字段"]
+      let params={};
+      if (!this.uploadBefore(this.files,params)) {
         return;
+      }
+      let paramText="";
+      if (Object.keys(params).length) {
+        paramText="?1=1";
+        for (const key in params) {
+          let value=params[key];
+          if(typeof(value)=='object'){
+            value=JSON.stringify(value)
+          }
+          paramText+=`&${key}=${value}`
+        }
       }
 
       this.loadingStatus = true;
@@ -503,7 +516,7 @@ export default {
       // forms.append("fileInput", this.files);
 
       this.http
-        .post(this.url, forms, this.autoUpload ? '正在上传文件' : '')
+        .post(this.url+paramText, forms, this.autoUpload ? '正在上传文件' : '')
         .then(
           (x) => {
             // this.$refs.uploadFile.clearFiles();
